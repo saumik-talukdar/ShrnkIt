@@ -66,12 +66,18 @@ public class RefreshTokenService {
         return UUID.fromString(userId);
     }
 
-    public void revokeRefreshToken(String token) {
+    public void revokeRefreshToken(UUID id,String token) {
 
         String tokenKey = RT_PREFIX + token;
         String userId = redisTemplate.opsForValue().get(tokenKey);
 
         if(userId != null){
+
+            if(!UUID.fromString(userId).equals(id)) {
+                throw new InvalidRefreshTokenException(
+                        "Refresh token does not belong to the authenticated user."
+                );
+            }
 
             String userKey = USER_PREFIX + userId;
             redisTemplate.execute(new SessionCallback<List<Object>>() {

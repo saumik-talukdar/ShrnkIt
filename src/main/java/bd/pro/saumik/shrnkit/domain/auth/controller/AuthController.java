@@ -1,8 +1,6 @@
 package bd.pro.saumik.shrnkit.domain.auth.controller;
 
-import bd.pro.saumik.shrnkit.domain.auth.dto.request.LoginRequest;
-import bd.pro.saumik.shrnkit.domain.auth.dto.request.RefreshTokenRequest;
-import bd.pro.saumik.shrnkit.domain.auth.dto.request.RegisterRequest;
+import bd.pro.saumik.shrnkit.domain.auth.dto.request.*;
 import bd.pro.saumik.shrnkit.domain.auth.dto.response.AuthResponse;
 import bd.pro.saumik.shrnkit.domain.auth.service.AuthService;
 import jakarta.validation.Valid;
@@ -43,5 +41,27 @@ public class AuthController {
         return ResponseEntity.ok(
                 authService.refresh(request.refreshToken()));
     }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Void> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request
+    ) {
+
+        authService.forgotPassword(request.email());
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request
+    ) {
+
+        authService.resetPassword(request.token(), request.newPassword());
+
+        return ResponseEntity.noContent().build();
+    }
+
+
 
 }

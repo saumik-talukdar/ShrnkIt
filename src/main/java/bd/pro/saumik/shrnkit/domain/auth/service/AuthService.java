@@ -1,6 +1,7 @@
 package bd.pro.saumik.shrnkit.domain.auth.service;
 
 import bd.pro.saumik.shrnkit.common.exception.EmailAlreadyExistsException;
+import bd.pro.saumik.shrnkit.common.exception.InvalidTokenException;
 import bd.pro.saumik.shrnkit.common.exception.UserNotFoundException;
 import bd.pro.saumik.shrnkit.domain.auth.dto.request.LoginRequest;
 import bd.pro.saumik.shrnkit.domain.auth.dto.request.RegisterRequest;
@@ -32,6 +33,8 @@ public class AuthService {
     private final JwtService jwtService;
 
     private final RefreshTokenService refreshTokenService;
+
+    private final PasswordResetService passwordResetService;
 
     @Value("${jwt.access-token-expiration}")
     private Long accessTokenExpiry;
@@ -104,7 +107,7 @@ public class AuthService {
         User user = userRepository.findById(userId)
                 .orElseThrow(()-> new UserNotFoundException("User not found"));
 
-        refreshTokenService.revokeRefreshToken(refreshToken);
+        refreshTokenService.revokeRefreshToken(userId,refreshToken);
 
         String newRefresh =
                 refreshTokenService.createRefreshToken(userId);
@@ -118,5 +121,33 @@ public class AuthService {
                 "Bearer",
                 accessTokenExpiry/1000
         );
+    }
+
+    @Transactional
+    public void forgotPassword(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElse(null);
+        if (user == null) {
+            return; // silent
+        }
+        String resetToken = passwordResetService.createResetToken(user.getId());
+
+    }
+
+    @Transactional
+    public void resetPassword(String token, String newPassword) {
+
+        UUID userId = passwordResetService.validateResetToken(token);
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found."));
+
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+
+        user.incrementPasswordVersion();
+
+        refreshTokenService.revokeAllRefreshTokens(userId);
+
+        passwordResetService.deleteResetToken(token);
     }
 }
