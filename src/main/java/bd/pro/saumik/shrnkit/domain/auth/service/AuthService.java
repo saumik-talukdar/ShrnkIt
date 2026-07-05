@@ -3,6 +3,9 @@ package bd.pro.saumik.shrnkit.domain.auth.service;
 import bd.pro.saumik.shrnkit.common.exception.EmailAlreadyExistsException;
 import bd.pro.saumik.shrnkit.common.exception.InvalidTokenException;
 import bd.pro.saumik.shrnkit.common.exception.UserNotFoundException;
+import bd.pro.saumik.shrnkit.common.mail.EmailMessage;
+import bd.pro.saumik.shrnkit.common.mail.EmailService;
+import bd.pro.saumik.shrnkit.common.mail.EmailTemplateService;
 import bd.pro.saumik.shrnkit.domain.auth.dto.request.LoginRequest;
 import bd.pro.saumik.shrnkit.domain.auth.dto.request.RegisterRequest;
 import bd.pro.saumik.shrnkit.domain.auth.dto.response.AuthResponse;
@@ -36,11 +39,17 @@ public class AuthService {
 
     private final PasswordResetService passwordResetService;
 
+    private final EmailVerificationService emailVerificationService;
+
+    private final EmailService emailService;
+
+    private final EmailTemplateService emailTemplateService;
+
     @Value("${jwt.access-token-expiration}")
     private Long accessTokenExpiry;
 
     @Transactional
-    public AuthResponse register(RegisterRequest request) {
+    public void register(RegisterRequest request) {
 
         if (userRepository.existsByEmail(request.email())) {
             throw new EmailAlreadyExistsException("Email already exist!");
@@ -56,17 +65,18 @@ public class AuthService {
 
         userRepository.save(user);
 
-        String accessToken =
-                jwtService.generateAccessToken(user);
-
-        String refreshToken =
-                refreshTokenService.createRefreshToken(user.getId());
-
-        return new AuthResponse(
-                accessToken,
-                refreshToken,
-                "Bearer",
-                accessTokenExpiry/1000
+        String token = emailVerificationService.createToken(user.getId());
+        String verificationUrl = "http://localhost:8080/api/v1/auth/verification/" + token;
+        String html = emailTemplateService.verificationEmail(
+                user.getFirstName(),
+                verificationUrl
+        );
+        emailService.sendEmail(
+                new EmailMessage(
+                        user.getEmail(),
+                        "Verify your email",
+                        html
+                        )
         );
     }
 
