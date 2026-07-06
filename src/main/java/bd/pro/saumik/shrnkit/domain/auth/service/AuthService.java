@@ -1,7 +1,7 @@
 package bd.pro.saumik.shrnkit.domain.auth.service;
 
 import bd.pro.saumik.shrnkit.common.exception.EmailAlreadyExistsException;
-import bd.pro.saumik.shrnkit.common.exception.InvalidTokenException;
+import bd.pro.saumik.shrnkit.common.exception.EmailNotVerifiedException;
 import bd.pro.saumik.shrnkit.common.exception.UserNotFoundException;
 import bd.pro.saumik.shrnkit.common.mail.EmailMessage;
 import bd.pro.saumik.shrnkit.common.mail.EmailService;
@@ -48,6 +48,9 @@ public class AuthService {
     @Value("${jwt.access-token-expiration}")
     private Long accessTokenExpiry;
 
+    @Value("${app.frontend-url}")
+    private String frontendUrl;
+
     @Transactional
     public void register(RegisterRequest request) {
 
@@ -57,27 +60,14 @@ public class AuthService {
 
         User user = User.builder()
                 .email(request.email())
-                .passwordHash(
-                        passwordEncoder.encode(request.password()))
+                .passwordHash(passwordEncoder.encode(request.password()))
                 .firstName(request.firstName())
                 .lastName(request.lastName())
                 .build();
 
         userRepository.save(user);
 
-        String token = emailVerificationService.createToken(user.getId());
-        String verificationUrl = "http://localhost:8080/api/v1/auth/verification/" + token;
-        String html = emailTemplateService.verificationEmail(
-                user.getFirstName(),
-                verificationUrl
-        );
-        emailService.sendEmail(
-                new EmailMessage(
-                        user.getEmail(),
-                        "Verify your email",
-                        html
-                        )
-        );
+        sendVerificationMail(user.getId(),user.getFirstName(),user.getEmail());
     }
 
     @Transactional
@@ -93,6 +83,13 @@ public class AuthService {
 
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(()-> new UserNotFoundException("User not found"));
+
+        // automatic handling in AppUserDetails
+//        if (!user.isEmailVerified()) {
+//            throw new EmailNotVerifiedException(
+//                    "Please verify your email before logging in."
+//            );
+//        }
 
         String accessToken =
                 jwtService.generateAccessToken(user);
@@ -140,8 +137,7 @@ public class AuthService {
         if (user == null) {
             return; // silent
         }
-        String resetToken = passwordResetService.createResetToken(user.getId());
-
+        sendResetPasswordMail(user.getId(), user.getFirstName(), user.getEmail());
     }
 
     @Transactional
@@ -159,5 +155,63 @@ public class AuthService {
         refreshTokenService.revokeAllRefreshTokens(userId);
 
         passwordResetService.deleteResetToken(token);
+    }
+
+    @Transactional
+    public void verifyEmail(String token) {
+        UUID userId = emailVerificationService.getId(token);
+        if(userId == null){
+            return;
+        }
+        User user = userRepository.findById(userId).orElse(null);
+        if(user == null){
+            return; // silent
+        }
+        user.verifyEmail();
+        emailVerificationService.deleteToken(token);
+    }
+
+    public void resendVerificationEmail(String email){
+        User user = userRepository.findByEmail(email)
+                .orElse(null);
+        if(user == null || user.isEmailVerified()) {
+            return; // silent
+        }
+        sendVerificationMail(user.getId(),user.getFirstName(),user.getEmail());
+    }
+
+
+    // utils
+
+    private void sendVerificationMail(UUID userId,String firstName, String email) {
+        String token = emailVerificationService.createToken(userId);
+        String verificationUrl = frontendUrl + "/auth/verification/" + token;
+        String html = emailTemplateService.verificationEmail(
+                firstName,
+                verificationUrl
+        );
+        emailService.sendEmail(
+                new EmailMessage(
+                        email,
+                        "Verify your email",
+                        html
+                )
+        );
+    }
+
+    private void sendResetPasswordMail(UUID userId,String firstName, String email) {
+        String resetToken = passwordResetService.createResetToken(userId);
+        String url = frontendUrl + "/auth/reset-password/" + resetToken;
+        String html = emailTemplateService.resetPasswordEmail(
+                firstName,
+                url
+        );
+        emailService.sendEmail(
+                new EmailMessage(
+                        email,
+                        "Verify your email",
+                        html
+                )
+        );
     }
 }

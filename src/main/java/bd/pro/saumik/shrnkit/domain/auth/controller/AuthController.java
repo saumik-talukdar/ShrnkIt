@@ -61,6 +61,26 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/verify-email")
+    public ResponseEntity<Void> verifyEmail(
+            @Valid @RequestBody VerifyEmailRequest request
+    ) {
 
+        authService.verifyEmail(request.token());
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/resend-verification")
+    public ResponseEntity<Void> resendVerification(
+            @Valid @RequestBody ResendVerificationRequest request
+    ) {
+
+        authService.resendVerificationEmail(
+                request.email()
+        );
+
+        return ResponseEntity.noContent().build();
+    }
 
 }

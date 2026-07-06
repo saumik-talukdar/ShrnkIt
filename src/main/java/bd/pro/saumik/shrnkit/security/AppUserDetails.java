@@ -61,6 +61,6 @@ public class AppUserDetails implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return user.isActive();
+        return user.isActive() && user.isEmailVerified();
     }
 }

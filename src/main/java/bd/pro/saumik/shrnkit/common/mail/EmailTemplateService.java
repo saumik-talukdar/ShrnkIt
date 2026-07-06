@@ -22,4 +22,17 @@ public class EmailTemplateService {
                 context
         );
     }
+
+    public String resetPasswordEmail(
+            String firstName,
+            String passwordResetUrl
+    ){
+        Context context = new Context();
+        context.setVariable("firstName", firstName);
+        context.setVariable("passwordResetUrl", passwordResetUrl);
+        return templateEngine.process(
+                "email/password-reset",
+                context
+        );
+    }
 }
