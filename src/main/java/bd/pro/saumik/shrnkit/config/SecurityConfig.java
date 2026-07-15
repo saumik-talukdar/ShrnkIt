@@ -55,10 +55,13 @@ public class SecurityConfig {
         return configuration.getAuthenticationManager();
     }
 
+
+
     public static final class SecurityEndpoints {
 
         public static final String[] PUBLIC = {
                 "/api/v1/auth/**",
+                "/api/v1/c/**",
                 "/swagger-ui/**",
                 "/v3/api-docs/**"
         };
