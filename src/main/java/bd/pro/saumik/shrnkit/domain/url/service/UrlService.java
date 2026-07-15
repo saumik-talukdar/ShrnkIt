@@ -1,5 +1,6 @@
 package bd.pro.saumik.shrnkit.domain.url.service;
 
+import bd.pro.saumik.shrnkit.common.cache.UrlCacheService;
 import bd.pro.saumik.shrnkit.common.exception.ShortUrlNotFoundException;
 import bd.pro.saumik.shrnkit.domain.url.dto.request.CreateShortUrlRequest;
 import bd.pro.saumik.shrnkit.domain.url.dto.request.UpdateShortUrlRequest;
@@ -27,6 +28,8 @@ public class UrlService {
     private final ShortCodeGenerator generator;
 
     private final ShortUrlMapper mapper;
+
+    private final UrlCacheService cacheService;
 
     @Transactional
     public ShortUrlResponse create(
@@ -72,6 +75,8 @@ public class UrlService {
         ShortUrl shortUrl = getOwnedUrl(userId, urlId);
 
         shortUrl.deactivate();
+
+        cacheService.evict(shortUrl.getShortCode());
     }
 
     @Transactional
@@ -98,6 +103,8 @@ public class UrlService {
                 shortUrl.deactivate();
             }
         }
+
+        cacheService.evict(shortUrl.getShortCode());
 
         return mapper.toSummary(shortUrl);
     }
