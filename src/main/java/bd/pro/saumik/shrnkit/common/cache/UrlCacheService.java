@@ -4,10 +4,10 @@ import java.util.Optional;
 
 public interface UrlCacheService {
 
-    Optional<String> get(String shortCode);
+    Optional<CachedUrl> getByShortCode(String shortCode);
 
-    void put(String shortCode, String originalUrl);
+    void put(CachedUrl cachedUrl);
 
-    void evict(String shortCode);
+    void evictByShortCode(String shortCode);
 
 }

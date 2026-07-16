@@ -1,5 +1,6 @@
 package bd.pro.saumik.shrnkit.domain.url.mapper;
 
+import bd.pro.saumik.shrnkit.common.cache.CachedUrl;
 import bd.pro.saumik.shrnkit.domain.url.dto.response.ShortUrlResponse;
 import bd.pro.saumik.shrnkit.domain.url.dto.response.UrlSummaryResponse;
 import bd.pro.saumik.shrnkit.domain.url.entity.ShortUrl;
@@ -49,4 +50,17 @@ public class ShortUrlMapper {
                 url.getCreatedAt()
         );
     }
+
+    public CachedUrl toCachedUrl(ShortUrl shortUrl) {
+
+        return new CachedUrl(
+                shortUrl.getId(),
+                shortUrl.getShortCode(),
+                shortUrl.getOriginalUrl(),
+                shortUrl.isActive(),
+                shortUrl.getExpiresAt()
+        );
+    }
+
+
 }

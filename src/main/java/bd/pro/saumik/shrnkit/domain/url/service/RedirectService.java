@@ -1,8 +1,11 @@
 package bd.pro.saumik.shrnkit.domain.url.service;
 
+import bd.pro.saumik.shrnkit.common.cache.CachedUrl;
 import bd.pro.saumik.shrnkit.common.cache.UrlCacheService;
 import bd.pro.saumik.shrnkit.common.exception.ShortUrlNotFoundException;
 import bd.pro.saumik.shrnkit.domain.url.entity.ShortUrl;
+import bd.pro.saumik.shrnkit.domain.url.mapper.ShortUrlMapper;
+import bd.pro.saumik.shrnkit.domain.url.model.RedirectResult;
 import bd.pro.saumik.shrnkit.domain.url.repository.ShortUrlRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -17,14 +20,25 @@ public class RedirectService {
 
     private final ShortUrlRepository repository;
     private final UrlCacheService cacheService;
+    private final ShortUrlMapper mapper;
 
     @Transactional(readOnly = true)
-    public String resolve(String shortCode) {
+    public RedirectResult resolve(String shortCode) {
 
-        Optional<String> cached = cacheService.get(shortCode);
+        Optional<CachedUrl> cached = cacheService.getByShortCode(shortCode);
 
         if (cached.isPresent()) {
-            return cached.get();
+
+            CachedUrl url = cached.get();
+
+            if (!url.canRedirect()) {
+                throw new ShortUrlNotFoundException();
+            }
+
+            return new RedirectResult(
+                    url.shortUrlId(),
+                    url.originalUrl()
+            );
         }
 
         ShortUrl shortUrl = repository.findByShortCode(shortCode)
@@ -34,12 +48,12 @@ public class RedirectService {
             throw new ShortUrlNotFoundException();
         }
 
-        cacheService.put(
-                shortCode,
+        cacheService.put(mapper.toCachedUrl(shortUrl));
+
+        return new RedirectResult(
+                shortUrl.getId(),
                 shortUrl.getOriginalUrl()
         );
-
-        return shortUrl.getOriginalUrl();
     }
 
 }

@@ -31,6 +31,8 @@ public class UrlService {
 
     private final UrlCacheService cacheService;
 
+    private final UrlOwnershipService urlOwnershipService;
+
     @Transactional
     public ShortUrlResponse create(
             UUID userId,
@@ -72,11 +74,11 @@ public class UrlService {
             UUID urlId
     ) {
 
-        ShortUrl shortUrl = getOwnedUrl(userId, urlId);
+        ShortUrl shortUrl = urlOwnershipService.getOwnedUrl(userId, urlId);
 
         shortUrl.deactivate();
 
-        cacheService.evict(shortUrl.getShortCode());
+        cacheService.evictByShortCode(shortUrl.getShortCode());
     }
 
     @Transactional
@@ -86,7 +88,7 @@ public class UrlService {
             UpdateShortUrlRequest request
     ) {
 
-        ShortUrl shortUrl = getOwnedUrl(userId, urlId);
+        ShortUrl shortUrl = urlOwnershipService.getOwnedUrl(userId, urlId);
 
         if (request.originalUrl() != null) {
             shortUrl.updateOriginalUrl(request.originalUrl());
@@ -104,20 +106,9 @@ public class UrlService {
             }
         }
 
-        cacheService.evict(shortUrl.getShortCode());
+        cacheService.evictByShortCode(shortUrl.getShortCode());
 
         return mapper.toSummary(shortUrl);
     }
 
-    private ShortUrl getOwnedUrl(UUID userId, UUID urlId) {
-
-        ShortUrl shortUrl = repository.findById(urlId)
-                .orElseThrow(ShortUrlNotFoundException::new);
-
-        if (!shortUrl.getOwnerId().equals(userId)) {
-            throw new AccessDeniedException("You do not own this URL.");
-        }
-
-        return shortUrl;
-    }
 }

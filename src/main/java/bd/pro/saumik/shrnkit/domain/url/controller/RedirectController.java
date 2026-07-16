@@ -1,5 +1,7 @@
 package bd.pro.saumik.shrnkit.domain.url.controller;
 
+import bd.pro.saumik.shrnkit.domain.analytics.service.AnalyticsService;
+import bd.pro.saumik.shrnkit.domain.url.model.RedirectResult;
 import bd.pro.saumik.shrnkit.domain.url.service.RedirectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,16 +19,19 @@ import java.net.URI;
 public class RedirectController {
 
     private final RedirectService redirectService;
+    private final AnalyticsService analyticsService;
 
     @GetMapping("/{shortCode}")
     public ResponseEntity<Void> redirect(
             @PathVariable String shortCode
     ) {
 
-        String originalUrl = redirectService.resolve(shortCode);
-
+        RedirectResult result = redirectService.resolve(shortCode);
+        analyticsService.recordClick(
+                result.shortUrlId()
+        );
         return ResponseEntity.status(HttpStatus.FOUND)
-                .location(URI.create(originalUrl))
+                .location(URI.create(result.originalUrl()))
                 .build();
     }
 
