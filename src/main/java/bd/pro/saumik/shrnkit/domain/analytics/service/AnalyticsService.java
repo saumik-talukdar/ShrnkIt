@@ -21,11 +21,18 @@ public class AnalyticsService {
 
     private final UrlOwnershipService urlOwnershipService;
 
-    public void recordClick(UUID shortUrlId) {
+    @Transactional
+    public void recordClick(
+            UUID shortUrlId,
+            UUID visitorId
+    ) {
+
+        // System.out.println("visitorId = " + visitorId);
 
         clickEventRepository.save(
                 ClickEvent.builder()
                         .shortUrlId(shortUrlId)
+                        .visitorId(visitorId)
                         .build()
         );
     }
@@ -39,7 +46,8 @@ public class AnalyticsService {
         urlOwnershipService.getOwnedUrl(userId, urlId);
 
         return new AnalyticsResponse(
-                clickEventRepository.countByShortUrlId(urlId)
+                clickEventRepository.countByShortUrlId(urlId),
+                clickEventRepository.countUniqueVisitors(urlId)
         );
     }
 

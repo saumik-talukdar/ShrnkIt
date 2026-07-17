@@ -11,6 +11,7 @@ import java.util.UUID;
         name = "click_events",
         indexes = {
                 @Index(name = "idx_click_url", columnList = "short_url_id"),
+                @Index(name = "idx_click_visitor", columnList = "visitor_id"),
                 @Index(name = "idx_click_time", columnList = "clicked_at")
         }
 )
@@ -27,6 +28,9 @@ public class ClickEvent {
 
     @Column(name = "short_url_id", nullable = false)
     private UUID shortUrlId;
+
+    @Column(name = "visitor_id", nullable = false)
+    private UUID visitorId;
 
     @Column(name = "clicked_at", nullable = false, updatable = false)
     private Instant clickedAt;
