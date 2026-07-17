@@ -1,6 +1,8 @@
 package bd.pro.saumik.shrnkit.domain.url.controller;
 
+import bd.pro.saumik.shrnkit.common.event.DomainEventPublisher;
 import bd.pro.saumik.shrnkit.common.http.VisitorService;
+import bd.pro.saumik.shrnkit.domain.analytics.event.UrlVisitedEvent;
 import bd.pro.saumik.shrnkit.domain.analytics.service.AnalyticsService;
 import bd.pro.saumik.shrnkit.domain.url.model.RedirectResult;
 import bd.pro.saumik.shrnkit.domain.url.service.RedirectService;
@@ -23,8 +25,8 @@ import java.util.UUID;
 public class RedirectController {
 
     private final RedirectService redirectService;
-    private final AnalyticsService analyticsService;
     private final VisitorService visitorService;
+    private final DomainEventPublisher eventPublisher;
 
     @GetMapping("/{shortCode}")
     public ResponseEntity<Void> redirect(
@@ -36,10 +38,14 @@ public class RedirectController {
         UUID visitorId = visitorService.resolveVisitor(request, response);
 
         RedirectResult result = redirectService.resolve(shortCode);
-        analyticsService.recordClick(
-                result.shortUrlId(),
-                visitorId
+
+        eventPublisher.publish(
+                new UrlVisitedEvent(
+                        result.shortUrlId(),
+                        visitorId
+                )
         );
+
         return ResponseEntity.status(HttpStatus.FOUND)
                 .location(URI.create(result.originalUrl()))
                 .build();
