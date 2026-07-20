@@ -4,5 +4,7 @@ import java.util.UUID;
 
 public record UrlVisitedEvent(
         UUID shortUrlId,
-        UUID visitorId
+        UUID visitorId,
+        String userAgent,
+        String referer
 ) {}

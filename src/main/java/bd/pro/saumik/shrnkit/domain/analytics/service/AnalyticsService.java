@@ -1,6 +1,7 @@
 package bd.pro.saumik.shrnkit.domain.analytics.service;
 
 import bd.pro.saumik.shrnkit.common.exception.ShortUrlNotFoundException;
+import bd.pro.saumik.shrnkit.common.http.UserAgentInfo;
 import bd.pro.saumik.shrnkit.domain.analytics.dto.response.AnalyticsResponse;
 import bd.pro.saumik.shrnkit.domain.analytics.entity.ClickEvent;
 import bd.pro.saumik.shrnkit.domain.analytics.repository.ClickEventRepository;
@@ -24,7 +25,8 @@ public class AnalyticsService {
     @Transactional
     public void recordClick(
             UUID shortUrlId,
-            UUID visitorId
+            UUID visitorId,
+            UserAgentInfo info
     ) {
 
         // System.out.println("visitorId = " + visitorId);
@@ -33,6 +35,9 @@ public class AnalyticsService {
                 ClickEvent.builder()
                         .shortUrlId(shortUrlId)
                         .visitorId(visitorId)
+                        .browser(info.browser())
+                        .operatingSystem(info.operatingSystem())
+                        .deviceType(info.deviceType())
                         .build()
         );
     }

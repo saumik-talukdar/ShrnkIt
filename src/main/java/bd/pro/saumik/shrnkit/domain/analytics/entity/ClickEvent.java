@@ -32,6 +32,15 @@ public class ClickEvent {
     @Column(name = "visitor_id", nullable = false)
     private UUID visitorId;
 
+    @Column(nullable = false, length = 50)
+    private String browser;
+
+    @Column(nullable = false, length = 50)
+    private String operatingSystem;
+
+    @Column(nullable = false, length = 20)
+    private String deviceType;
+
     @Column(name = "clicked_at", nullable = false, updatable = false)
     private Instant clickedAt;
 

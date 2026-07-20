@@ -39,10 +39,18 @@ public class RedirectController {
 
         RedirectResult result = redirectService.resolve(shortCode);
 
+        String userAgent =
+                request.getHeader("User-Agent");
+
+        String referer =
+                request.getHeader("Referer");
+
         eventPublisher.publish(
                 new UrlVisitedEvent(
                         result.shortUrlId(),
-                        visitorId
+                        visitorId,
+                        userAgent,
+                        referer
                 )
         );
 
