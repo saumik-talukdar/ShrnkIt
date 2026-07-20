@@ -1,14 +1,13 @@
 package bd.pro.saumik.shrnkit.domain.auth.service;
 
+import bd.pro.saumik.shrnkit.common.event.DomainEventPublisher;
 import bd.pro.saumik.shrnkit.common.exception.EmailAlreadyExistsException;
-import bd.pro.saumik.shrnkit.common.exception.EmailNotVerifiedException;
 import bd.pro.saumik.shrnkit.common.exception.UserNotFoundException;
-import bd.pro.saumik.shrnkit.common.mail.EmailMessage;
-import bd.pro.saumik.shrnkit.common.mail.EmailService;
-import bd.pro.saumik.shrnkit.common.mail.EmailTemplateService;
 import bd.pro.saumik.shrnkit.domain.auth.dto.request.LoginRequest;
 import bd.pro.saumik.shrnkit.domain.auth.dto.request.RegisterRequest;
 import bd.pro.saumik.shrnkit.domain.auth.dto.response.AuthResponse;
+import bd.pro.saumik.shrnkit.domain.auth.event.PasswordResetRequestedEvent;
+import bd.pro.saumik.shrnkit.domain.auth.event.UserRegisteredEvent;
 import bd.pro.saumik.shrnkit.domain.user.entity.User;
 import bd.pro.saumik.shrnkit.domain.user.repository.UserRepository;
 import bd.pro.saumik.shrnkit.security.JwtService;
@@ -41,15 +40,12 @@ public class AuthService {
 
     private final EmailVerificationService emailVerificationService;
 
-    private final EmailService emailService;
+    private final DomainEventPublisher eventPublisher;
 
-    private final EmailTemplateService emailTemplateService;
 
     @Value("${jwt.access-token-expiration}")
     private Long accessTokenExpiry;
 
-    @Value("${app.frontend-url}")
-    private String frontendUrl;
 
     @Transactional
     public void register(RegisterRequest request) {
@@ -67,7 +63,14 @@ public class AuthService {
 
         userRepository.save(user);
 
-        sendVerificationMail(user.getId(),user.getFirstName(),user.getEmail());
+        eventPublisher.publish(
+                new UserRegisteredEvent(
+                        user.getId(),
+                        user.getFirstName(),
+                        user.getEmail()
+                )
+        );
+
     }
 
     @Transactional
@@ -137,7 +140,13 @@ public class AuthService {
         if (user == null) {
             return; // silent
         }
-        sendResetPasswordMail(user.getId(), user.getFirstName(), user.getEmail());
+        eventPublisher.publish(
+                new PasswordResetRequestedEvent(
+                        user.getId(),
+                        user.getFirstName(),
+                        user.getEmail()
+                )
+        );
     }
 
     @Transactional
@@ -177,41 +186,15 @@ public class AuthService {
         if(user == null || user.isEmailVerified()) {
             return; // silent
         }
-        sendVerificationMail(user.getId(),user.getFirstName(),user.getEmail());
-    }
 
-
-    // utils
-
-    private void sendVerificationMail(UUID userId,String firstName, String email) {
-        String token = emailVerificationService.createToken(userId);
-        String verificationUrl = frontendUrl + "/auth/verification/" + token;
-        String html = emailTemplateService.verificationEmail(
-                firstName,
-                verificationUrl
-        );
-        emailService.sendEmail(
-                new EmailMessage(
-                        email,
-                        "Verify your email",
-                        html
+        eventPublisher.publish(
+                new UserRegisteredEvent(
+                        user.getId(),
+                        user.getFirstName(),
+                        user.getEmail()
                 )
         );
     }
 
-    private void sendResetPasswordMail(UUID userId,String firstName, String email) {
-        String resetToken = passwordResetService.createResetToken(userId);
-        String url = frontendUrl + "/auth/reset-password/" + resetToken;
-        String html = emailTemplateService.resetPasswordEmail(
-                firstName,
-                url
-        );
-        emailService.sendEmail(
-                new EmailMessage(
-                        email,
-                        "Verify your email",
-                        html
-                )
-        );
-    }
+
 }
