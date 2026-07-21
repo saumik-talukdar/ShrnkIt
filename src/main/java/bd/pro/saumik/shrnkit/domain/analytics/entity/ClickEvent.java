@@ -41,6 +41,9 @@ public class ClickEvent {
     @Column(nullable = false, length = 20)
     private String deviceType;
 
+    @Column(nullable = false, length = 100)
+    private String referrerSource;
+
     @Column(name = "clicked_at", nullable = false, updatable = false)
     private Instant clickedAt;
 

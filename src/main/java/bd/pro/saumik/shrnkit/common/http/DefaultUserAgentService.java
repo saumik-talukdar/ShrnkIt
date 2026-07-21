@@ -27,12 +27,12 @@ public class DefaultUserAgentService
 
         String browser = client.userAgent.family;
         String operatingSystem = client.os.family;
-        String device = client.device.family;
+        String device = resolveDeviceType(userAgent);
 
         return new UserAgentInfo(
                 browser != null ? browser : "Unknown",
                 operatingSystem != null ? operatingSystem : "Unknown",
-                resolveDeviceType(userAgent)
+                device
         );
     }
 
